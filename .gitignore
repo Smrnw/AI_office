@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.claude/
+*.log
+
+# данные офиса: конфиг с API-ключами, задачи, переписка, код проектов
+data/
+.env
+.env.*
+!.env.example

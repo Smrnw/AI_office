@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Office</title>
+<link rel="icon" type="image/png" href="/static/img/office.png">
+<link rel="stylesheet" href="/static/css/base.css">
+<link rel="stylesheet" href="/static/css/layout.css">
+<link rel="stylesheet" href="/static/css/panels.css">
+<link rel="stylesheet" href="/static/css/modals.css">
+<script type="module" src="/static/js/main.js"></script>
+</head>
+<body>
+<div class="app">
+
+    <header class="topbar">
+        <div class="menu-wrap">
+            <button class="icon-btn" data-action="menu" data-menu="mainMenu" aria-label="Меню" title="Меню">☰</button>
+            <div class="menu" id="mainMenu" hidden>
+                <button data-action="settings">⚙️ Настройки</button>
+                <button data-action="setup-open">🧭 Мастер настройки…</button>
+                <button data-action="run-check">🧪 Проверить проект</button>
+                <button data-action="rename-office">✏️ Переименовать офис…</button>
+                <button data-action="download-zip">📦 Скачать проект (ZIP)</button>
+                <button data-action="preview">🌐 Открыть страницу проекта</button>
+                <hr>
+                <button data-action="new-project">🚀 Новый проект…</button>
+                <button data-action="clear-chat">🧹 Очистить текущий чат</button>
+                <button class="danger" data-action="reset-board">🗑 Сбросить доску задач</button>
+                <div class="menu-foot" data-raw>AI Office <span class="app-version"></span></div>
+            </div>
+        </div>
+        <button class="title" id="officeTitle" data-action="rename-office" title="Нажмите, чтобы переименовать офис"><span data-raw id="officeName">AI Office</span></button>
+        <div class="menu-wrap project-wrap">
+            <button class="idea-chip" id="ideaChip" data-action="menu" data-menu="projectMenu" title="Текущий проект — нажмите, чтобы сменить"></button>
+            <div class="menu project-menu" id="projectMenu" hidden></div>
+        </div>
+        <div class="top-right">
+            <button class="btn btn-go" id="btnResume" data-action="resume" hidden title="Вернуть в работу незавершённые задачи">▶ Продолжить</button>
+            <button class="btn btn-stop" id="btnStop" data-action="stop" hidden title="Остановить работу агентов">■ СТОП</button>
+            <span class="autopilot-chip" id="autopilotChip" hidden></span>
+            <span class="live" id="live"><i class="live-dot"></i><span id="liveText">Свободно</span></span>
+            <div class="lang-switch" role="group" aria-label="Язык / Language" data-raw>
+                <button data-action="set-lang" data-lang="ru" title="Русский">RU</button>
+                <button data-action="set-lang" data-lang="en" title="English">EN</button>
+            </div>
+            <button class="icon-btn" data-action="help" title="Как пользоваться (F1)" aria-label="Справка">?</button>
+            <div class="menu-wrap">
+                <button class="avatar-btn" data-action="menu" data-menu="userMenu" aria-label="Профиль" title="Вы — заказчик">A</button>
+                <div class="menu right" id="userMenu" hidden>
+                    <button data-action="settings" data-tab="tab-general">🔑 Провайдеры и ключи</button>
+                    <button data-action="settings" data-tab="tab-models">🤖 Модели и лимиты</button>
+                    <button data-action="settings" data-tab="tab-agents">👥 Штат агентов</button>
+                    <hr>
+                    <button data-action="toggle-theme">🌓 Светлая / тёмная тема</button>
+                    <button data-action="help">⌨️ Горячие клавиши</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="layout">
+
+        <aside class="col-left">
+            <section class="panel agents-panel">
+                <div class="panel-head">
+                    <span class="grow">👥 Команда агентов <small id="agentsCount"></small></span>
+                    <button class="icon-btn sm" data-action="settings" data-tab="tab-agents" title="Нанять / настроить агентов">＋</button>
+                </div>
+                <div class="scroll" id="agentsList"></div>
+            </section>
+            <section class="panel files-panel">
+                <div class="panel-head">
+                    <span class="grow">📁 Файлы кода <small>(Workspace)</small></span>
+                    <small id="filesCount"></small>
+                    <div class="menu-wrap">
+                        <button class="icon-btn sm" data-action="menu" data-menu="filesMenu" title="Действия с файлами">⋯</button>
+                        <div class="menu right" id="filesMenu" hidden>
+                            <button data-action="new-file">📝 Новый файл…</button>
+                            <button data-action="preview">🌐 Открыть страницу проекта</button>
+                            <button data-action="download-zip">📦 Скачать всё (ZIP)</button>
+                        </div>
+                    </div>
+                </div>
+                <input class="std-input files-filter" id="filesFilter" type="search" placeholder="Поиск файла…" autocomplete="off">
+                <div class="scroll" id="filesBox"></div>
+            </section>
+        </aside>
+
+        <section class="col-center">
+            <div class="office-box" id="officeBox">
+                <canvas id="officeCanvas" width="960" height="540" title="Кликните на сотрудника, чтобы написать ему"></canvas>
+                <div class="office-tools">
+                    <button class="btn btn-ghost office-edit-btn" data-action="layout-open" title="Расставить столы, мебель и зоны">✏️ Планировка</button>
+                    <button class="icon-btn" data-action="office-zoom-out" title="Отдалить (колесо мыши)" aria-label="Отдалить">−</button>
+                    <button class="icon-btn" data-action="office-zoom-in" title="Приблизить (колесо мыши)" aria-label="Приблизить">＋</button>
+                    <button class="icon-btn" data-action="office-zoom-reset" title="Весь офис / обычный вид (двойной клик по полу — обычный вид)" aria-label="Весь офис">⤢</button>
+                    <button class="icon-btn" data-action="fullscreen" title="На весь экран" aria-label="Полноэкранный режим">⛶</button>
+                </div>
+                <div class="statusbar" id="statusbar"></div>
+                <aside class="layout-panel" id="layoutPanel" hidden>
+                    <div class="lp-head">✏️ Планировка офиса <button class="icon-btn sm" data-action="layout-cancel" title="Закрыть без сохранения">✕</button></div>
+                    <div class="lp-body">
+                        <div class="lp-title">Рабочие столы</div>
+                        <div class="lp-desks">
+                            <button class="icon-btn sm" id="lpMinus" data-action="desks-minus" title="Убрать блок столов">−</button>
+                            <b id="lpDesks">0</b><span>блоков по 2 стола</span>
+                            <button class="icon-btn sm" id="lpPlus" data-action="desks-plus" title="Добавить блок столов">＋</button>
+                        </div>
+                        <div class="lp-muted" id="lpDesksHint"></div>
+                        <div class="lp-title">Добавить</div>
+                        <div class="lp-palette" id="lpPalette"></div>
+                        <button class="btn btn-ghost lp-wide" data-action="layout-add-zone">▭ Новая зона</button>
+                        <div class="lp-props" id="lpProps"></div>
+                        <div class="lp-warn" id="lpWarn"></div>
+                    </div>
+                    <div class="lp-foot">
+                        <button class="btn btn-ghost" data-action="layout-reset" title="Очистить офис: убрать все зоны, столы и мебель">🧹</button>
+                        <button class="btn btn-ghost" data-action="layout-cancel">Отмена</button>
+                        <button class="btn btn-go" data-action="layout-save">💾 Сохранить</button>
+                    </div>
+                </aside>
+            </div>
+
+            <section class="panel bottom-panel">
+                <div class="panel-head">
+                    <div class="tabs grow" role="tablist">
+                        <button class="tab active" data-action="tab" data-tab="kanban" role="tab">▦ КАНБАН</button>
+                        <button class="tab" data-action="tab" data-tab="limits" role="tab">🧮 Лимиты</button>
+                        <button class="tab" data-action="tab" data-tab="log" role="tab">📜 Журнал</button>
+                    </div>
+                    <div class="kan-progress" title="Доля задач в колонке «Готово»">
+                        <span class="kan-progress-bar"><i id="kanBar"></i></span><b id="kanPct">0%</b>
+                    </div>
+                    <div class="menu-wrap">
+                        <button class="icon-btn sm" data-action="menu" data-menu="boardMenu" title="Действия">⋯</button>
+                        <div class="menu right" id="boardMenu" hidden>
+                            <button data-action="resume">▶ Продолжить незавершённое</button>
+                            <button data-action="run-check">🧪 Проверить проект</button>
+                            <button data-action="run-check">🧪 Проверить проект</button>
+                            <button data-action="reset-usage">🧮 Обнулить счётчики токенов</button>
+                            <hr>
+                            <button class="danger" data-action="reset-board">🗑 Сбросить доску задач</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-body" data-pane="kanban">
+                    <div class="kanban-grid" id="kanban">
+                        <div class="kan-col c-todo" data-col="todo"><div class="kan-head"><div>ОЧЕРЕДЬ <em>(todo)</em></div><span id="cnt-todo">0</span></div><div class="kan-list" id="col-todo"></div></div>
+                        <div class="kan-col c-in_progress" data-col="in_progress"><div class="kan-head"><div>В РАБОТЕ <em>(in_progress)</em></div><span id="cnt-in_progress">0</span></div><div class="kan-list" id="col-in_progress"></div></div>
+                        <div class="kan-col c-testing" data-col="testing"><div class="kan-head"><div>ПРОВЕРКА <em>(testing)</em></div><span id="cnt-testing">0</span></div><div class="kan-list" id="col-testing"></div></div>
+                        <div class="kan-col c-done" data-col="done"><div class="kan-head"><div>ГОТОВО <em>(done)</em></div><span id="cnt-done">0</span></div><div class="kan-list" id="col-done"></div></div>
+                    </div>
+                </div>
+                <div class="tab-body" data-pane="limits" hidden>
+                    <div class="limits-grid" id="limitsGrid"></div>
+                </div>
+                <div class="tab-body" data-pane="log" hidden>
+                    <div class="log-list" id="logList"></div>
+                </div>
+            </section>
+        </section>
+
+        <aside class="col-right">
+            <section class="panel chat-panel">
+                <div class="panel-head">
+                    <span class="grow">💬 Чат с агентами</span>
+                    <button class="mini-btn" data-action="tab" data-tab="log" title="Все события офиса — во вкладке «Журнал» под канбаном">📜 Журнал</button>
+                </div>
+                <div class="channels" id="channels"></div>
+                <div class="feed" id="chatFeed" aria-live="polite"></div>
+                <div class="composer">
+                    <div class="input-row">
+                        <textarea id="chatInput" rows="2" maxlength="4000" placeholder="Напишите сообщение…" title="Enter — отправить, Shift+Enter — новая строка"></textarea>
+                        <button class="send-btn" id="chatSend" data-action="send" title="Отправить (Enter)" aria-label="Отправить">➤</button>
+                    </div>
+                    <div class="hint" id="chatHint"></div>
+                </div>
+            </section>
+        </aside>
+    </main>
+</div>
+
+<!-- Мастер первоначальной настройки -->
+<div id="setupModal" class="modal-backdrop" data-modal>
+    <div class="modal-box narrow setup-box">
+        <div class="modal-head">
+            <div>
+                <h2>🧭 Настройка офиса</h2>
+                <div class="su-steps" id="setupSteps"></div>
+            </div>
+            <button class="btn btn-ghost" data-action="close-modal" title="Можно вернуться позже: меню ☰ → Мастер настройки">✕ Позже</button>
+        </div>
+        <div class="modal-body setup-body" id="setupBody"></div>
+        <div class="modal-foot">
+            <span></span>
+            <div class="right">
+                <button class="btn btn-ghost" id="setupBack" data-action="setup-back">← Назад</button>
+                <button class="btn btn-primary" id="setupNext" data-action="setup-next">Далее →</button>
+                <button class="btn btn-go" id="setupFinish" data-action="setup-finish" hidden>🚀 Создать офис</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- История изменений проекта (Git) -->
+<div id="gitModal" class="modal-backdrop" data-modal>
+    <div class="modal-box narrow">
+        <div class="modal-head">
+            <div>
+                <h2>📜 История изменений</h2>
+                <div class="modal-sub" id="gitSub"></div>
+            </div>
+            <button class="btn btn-ghost" data-action="close-modal">✕ Закрыть</button>
+        </div>
+        <div class="modal-body"><div class="git-log" id="gitLog"></div></div>
+    </div>
+</div>
+
+<!-- Справка -->
+<div id="helpModal" class="modal-backdrop" data-modal>
+    <div class="modal-box narrow">
+        <div class="modal-head">
+            <div>
+                <h2>❓ Как пользоваться офисом</h2>
+                <div class="modal-sub" data-raw>AI Office <span class="app-version"></span></div>
+            </div>
+            <button class="btn btn-ghost" data-action="close-modal">✕ Закрыть</button>
+        </div>
+        <div class="modal-body help-body">
+            <h3>Канал «Проект»</h3>
+            Если доска пустая, первое сообщение запускает новый проект: руководитель разобьёт его на файлы-задачи и раздаст команде.
+            Когда проект уже есть, сообщения уходят руководителю как просьба о доработке.
+            <h3>Личные каналы</h3>
+            Выберите агента (чип <code class="k">@Имя</code>, карточку слева или самого человечка в офисе) и пишите ему напрямую.
+            Разработчик сам внесёт правки, тестировщик разберёт код, руководитель распределит работу.
+            <h3>Автопилот</h3>
+            Напишите <code class="k">/auto цель</code>, например <code class="k">/auto Интернет-магазин с корзиной</code>:
+            команда сделает проект, руководитель составит требования к цели и будет сам ставить задачи кругами, пока цель
+            не достигнута. Для существующего проекта — меню проекта в шапке → «Автопилот для этого проекта». Перед каждым
+            кругом сохраняется версия проекта, откатиться можно там же. СТОП останавливает автопилот.
+            <h3>Штат и офис</h3>
+            Когда задач в очереди много, руководитель сам нанимает временных сотрудников, а под CSS, Docker или README —
+            дизайнера, DevOps или технического писателя. Когда работа закончена, временные уходят. Попросите в чате
+            «найми дизайнера» — такой сотрудник останется в штате. Если столов не хватает, офис сам ставит новые.
+            Настройки — вкладка «Автопилот».
+            <h3>Канбан</h3>
+            Карточки можно перетаскивать между колонками мышью: например, вернуть готовую задачу в очередь на доработку.
+            Клик по карточке открывает файл задачи и сгенерированный код.
+            <h3>Файлы в чате</h3>
+            Когда команда заканчивает работу, в чате появляются имена файлов: клик скачивает файл, 📌 открывает задачу,
+            «Скачать всё» даёт ZIP. Все служебные события пишутся во вкладку «Журнал» под канбаном.
+            <h3>Планировка офиса</h3>
+            Кнопка <b>✏️ Планировка</b> в углу офиса: добавляйте и убирайте блоки столов (без ограничений — если места нет,
+            стол встанет поверх и подсветится красным, передвиньте его сами), переставляйте мебель мышью, создавайте зоны.
+            Стрелки двигают выбранный предмет, Delete удаляет. Агент начинает работу, только когда дошёл до своего стола.
+            <h3>Зоны</h3>
+            У зоны есть описание, занятие (работа, отдых, кофе-брейк, обсуждения, личное пространство) и список ролей,
+            которым туда можно. Свободные агенты гуляют только по разрешённым зонам и охотнее идут отдыхать; описание
+            офиса агенты знают и учитывают в чате. Наведите мышь на зону, чтобы увидеть её описание.
+            <h3>Команды и клавиши</h3>
+            <code class="k">/new описание</code> — новый проект с чистой доской.
+            <kbd>Enter</kbd> отправить, <kbd>Shift+Enter</kbd> новая строка, <kbd>Esc</kbd> закрыть окно,
+            <kbd>Ctrl+K</kbd> к полю сообщения, <kbd>Ctrl+S</kbd> сохранить открытый файл, <kbd>F1</kbd> справка.
+            <h3>Лимиты нейросетей</h3>
+            Вкладка «Лимиты» показывает расход токенов по моделям. Если провайдер сообщает точный расход, берётся он,
+            иначе оценка по длине текста. Лимит — ваша собственная планка, задаётся в Настройках → Модели.
+            <h3>Пауза и продолжение</h3>
+            СТОП прерывает текущие запросы, «Продолжить» возвращает незавершённые задачи в работу.
+            <h3>Демо-режим</h3>
+            Провайдер «Демо» отвечает заготовками без ключей и интернета — удобно, чтобы посмотреть, как всё устроено.
+            Подключите настоящую модель в Настройках, и агенты начнут писать код по-настоящему.
+        </div>
+    </div>
+</div>
+
+<!-- Карточка задачи -->
+<div id="taskModal" class="modal-backdrop" data-modal>
+    <div class="modal-box mid">
+        <div class="modal-head">
+            <div>
+                <h2 id="taskTitle">📌 Задача</h2>
+                <div class="modal-sub">Файл задачи: <code id="taskPath">…</code></div>
+            </div>
+            <button class="btn btn-ghost" data-action="close-modal">✕ Закрыть</button>
+        </div>
+        <div class="mtabs">
+            <button class="mtab active" data-action="mtab" data-target="ptab-ticket">📝 Файл задачи (.txt)</button>
+            <button class="mtab" data-action="mtab" data-target="ptab-code">💻 Код</button>
+        </div>
+        <div class="modal-body mtab-content active" id="ptab-ticket">
+            <div class="code-meta">
+                <label>Колонка:
+                    <select id="taskStatus" class="std-input" style="width:auto; display:inline-block; margin-left:6px;">
+                        <option value="todo">📋 Очередь (todo)</option>
+                        <option value="in_progress" disabled>⚡ В работе (берут агенты)</option>
+                        <option value="testing">🔍 Проверка (testing)</option>
+                        <option value="done">✅ Готово (done)</option>
+                    </select>
+                </label>
+                <span class="status-msg" id="taskMsg"></span>
+            </div>
+            <div class="return-box">
+                <textarea id="taskComment" class="std-input" rows="2" maxlength="4000" placeholder="Что доработать? Агент получит этот комментарий вместе с текущим кодом файла"></textarea>
+                <button class="btn btn-primary" data-action="task-return" title="Вернуть задачу в очередь: свободный агент возьмёт её сразу">↩ Вернуть в работу</button>
+            </div>
+            <textarea id="taskRaw" class="code-editor" spellcheck="false"></textarea>
+        </div>
+        <div class="modal-body mtab-content" id="ptab-code">
+            <div class="code-meta"><span>Файл кода: <b id="taskCodeName"></b></span><span class="status-msg" id="taskCodeMsg"></span></div>
+            <textarea id="taskCode" class="code-editor" spellcheck="false" placeholder="Код этого файла ещё не написан"></textarea>
+        </div>
+        <div class="modal-foot">
+            <button class="btn btn-danger" data-action="task-delete">🗑 Удалить задачу</button>
+            <div class="right">
+                <button class="btn btn-ghost" data-action="task-copy-code">📋 Копировать код</button>
+                <button class="btn btn-ghost" data-action="task-save-code">💾 Сохранить код</button>
+                <button class="btn btn-go" data-action="task-save">💾 Сохранить задачу</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Просмотр файла -->
+<div id="codeModal" class="modal-backdrop" data-modal>
+    <div class="modal-box mid">
+        <div class="modal-head">
+            <div>
+                <h2 id="codeTitle">📄 Файл</h2>
+                <div class="modal-sub" id="codeSub"></div>
+            </div>
+            <button class="btn btn-ghost" data-action="close-modal">✕ Закрыть</button>
+        </div>
+        <div class="modal-body">
+            <textarea id="codeArea" class="code-editor" spellcheck="false"></textarea>
+        </div>
+        <div class="modal-foot">
+            <button class="btn btn-danger" data-action="file-delete">🗑 Удалить файл</button>
+            <div class="right">
+                <span class="status-msg" id="codeMsg"></span>
+                <button class="btn btn-ghost" data-action="file-preview" id="codePreviewBtn">🌐 Открыть в браузере</button>
+                <button class="btn btn-ghost" data-action="file-copy">📋 Копировать</button>
+                <button class="btn btn-go" data-action="file-save">💾 Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Настройки -->
+<div id="settingsModal" class="modal-backdrop" data-modal>
+    <div class="modal-box">
+        <div class="modal-head">
+            <div>
+                <h2>⚙️ Настройки офиса</h2>
+                <div class="modal-sub">Всё хранится в одном файле: <code id="cfgPath">config.json</code></div>
+            </div>
+            <button class="btn btn-ghost" data-action="close-modal">✕ Закрыть</button>
+        </div>
+        <div class="mtabs">
+            <button class="mtab active" data-action="mtab" data-target="tab-general">📁 Папки и провайдеры</button>
+            <button class="mtab" data-action="mtab" data-target="tab-models">🤖 Модели</button>
+            <button class="mtab" data-action="mtab" data-target="tab-agents">👥 Агенты</button>
+            <button class="mtab" data-action="mtab" data-target="tab-roles">🧩 Роли и промпты</button>
+            <button class="mtab" data-action="mtab" data-target="tab-checks">🧪 Проверка</button>
+            <button class="mtab" data-action="mtab" data-target="tab-autopilot">🤖 Автопилот</button>
+            <button class="mtab" data-action="mtab" data-target="tab-notify">🔔 Уведомления и Git</button>
+        </div>
+        <div class="modal-body mtab-content active" id="tab-general">
+            <div class="dirs-grid">
+                <div class="field-box">
+                    <label for="cfgWorkspace">📂 Рабочая папка кода (пусто — папка рядом с config.json)</label>
+                    <input id="cfgWorkspace" class="std-input" type="text" placeholder="D:/Projects/workspace">
+                </div>
+                <div class="field-box">
+                    <label for="cfgTasks">📋 Папка задач (внутри создаются todo, in_progress, testing, done)</label>
+                    <input id="cfgTasks" class="std-input" type="text" placeholder="D:/Projects/tasks">
+                </div>
+            </div>
+            <div class="section-row">
+                <div>
+                    <div class="section-title">🔑 Провайдеры нейросетей и API-ключи</div>
+                    <div class="section-sub">Ключи хранятся только на сервере и в браузер не отдаются. Если поменять адрес провайдера, ключ нужно ввести заново.</div>
+                </div>
+                <div class="templates" id="providerTemplates"></div>
+            </div>
+            <div id="providersEditor" class="scroll" style="padding:0; overflow:visible"></div>
+        </div>
+        <div class="modal-body mtab-content" id="tab-models">
+            <div class="section-row">
+                <div>
+                    <div class="section-title">🤖 Модели</div>
+                    <div class="section-sub">Каждая модель ссылается на провайдера. Лимит токенов — ваша планка для панели «Лимиты».</div>
+                </div>
+                <button class="btn btn-primary" data-action="cfg-add-model">+ Добавить модель</button>
+            </div>
+            <div id="modelsEditor" class="scroll" style="padding:0; overflow:visible"></div>
+        </div>
+        <div class="modal-body mtab-content" id="tab-agents">
+            <div class="section-row">
+                <div>
+                    <div class="section-title">👥 Штат, роли и системные промпты</div>
+                    <div class="section-sub">Planner — руководитель (сидит в кабинете), Coder пишет код, QA проверяет. Число мест задаёт планировка офиса.</div>
+                </div>
+                <button class="btn btn-primary" data-action="cfg-add-agent">+ Нанять агента</button>
+            </div>
+            <div id="agentsEditor" class="scroll" style="padding:0; overflow:visible"></div>
+        </div>
+        <div class="modal-body mtab-content" id="tab-roles">
+            <div class="section-row">
+                <div>
+                    <div class="section-title">🧩 Роли и системные промпты</div>
+                    <div class="section-sub">Опишите каждую роль своими словами — готовых промптов нет. Агент с пустым своим промптом работает по промпту роли, поэтому правка здесь сразу меняет всех таких агентов. Свой промпт агента (вкладка «Агенты») важнее промпта роли. Нанять сотрудника на роль без промпта нельзя.</div>
+                </div>
+            </div>
+            <div id="rolesEditor"></div>
+        </div>
+        <div class="modal-body mtab-content" id="tab-checks">
+            <div class="section-row">
+                <div>
+                    <div class="section-title">🧪 Автопроверка проекта</div>
+                    <div class="section-sub">Когда команда заканчивает работу, тестировщик проверяет проект: синтаксис, автотесты, страницы в браузере и безопасность. Найденные ошибки он сам возвращает разработчикам.</div>
+                </div>
+                <button class="btn btn-primary" data-action="run-check">🧪 Проверить сейчас</button>
+            </div>
+            <div class="chk-status" id="chkStatus"></div>
+            <div class="chk-list">
+                <label class="chk-row"><input type="checkbox" id="chkEnabled"><span><b>Проверять проект после выполнения всех задач</b><small>Без этого проверку можно запустить только кнопкой</small></span></label>
+                <label class="chk-row"><input type="checkbox" id="chkTests"><span><b>Запускать автотесты</b><small>pytest для Python, node --test для JavaScript — в одноразовой копии проекта</small></span></label>
+                <label class="chk-row"><input type="checkbox" id="chkWriteTests"><span><b>Просить разработчиков писать автотесты</b><small>Руководитель добавит в план задачу на тесты</small></span></label>
+                <label class="chk-row"><input type="checkbox" id="chkBrowser"><span><b>Открывать страницы в браузере</b><small>Ошибки JavaScript, незагрузившиеся файлы, нажатия на кнопки, скриншоты компьютера и телефона</small></span></label>
+                <label class="chk-row"><input type="checkbox" id="chkVision"><span><b>Показывать скриншот нейросети тестировщика</b><small>Модель оценит вёрстку глазами. Нужна модель, которая понимает картинки</small></span></label>
+                <label class="chk-row"><input type="checkbox" id="chkSecurity"><span><b>Проверять безопасность</b><small>Ключи и пароли в коде, eval, XSS, SQL-инъекции, bandit для Python</small></span></label>
+            </div>
+            <div class="dirs-grid">
+                <div class="field-box">
+                    <label for="chkRounds">🔁 Сколько раз подряд возвращать ошибки на доработку (0–5)</label>
+                    <input id="chkRounds" class="std-input" type="number" min="0" max="5" step="1">
+                </div>
+                <div class="field-box">
+                    <label for="chkSandbox">📦 Где запускать код проекта</label>
+                    <select id="chkSandbox" class="std-input">
+                        <option value="auto">Docker без сети, если он запущен, иначе без Docker</option>
+                        <option value="docker">Только в Docker (без него тесты не запускаются)</option>
+                        <option value="local">Без Docker: копия проекта, таймаут, без ваших переменных окружения</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="modal-body mtab-content" id="tab-autopilot">
+            <div class="section-row">
+                <div>
+                    <div class="section-title">🤖 Автопилот</div>
+                    <div class="section-sub">Команда сама доводит проект до цели: руководитель оценивает результат и ставит задачи кругами. Ограничители не дают автопилоту работать бесконечно и тратить лишнее.</div>
+                </div>
+            </div>
+            <div class="dirs-grid">
+                <div class="field-box">
+                    <label for="apCycles">🔁 Сколько кругов можно сделать (1–20)</label>
+                    <input id="apCycles" class="std-input" type="number" min="1" max="20" step="1">
+                </div>
+                <div class="field-box">
+                    <label for="apTasks">📌 Задач за один круг (1–8)</label>
+                    <input id="apTasks" class="std-input" type="number" min="1" max="8" step="1">
+                </div>
+                <div class="field-box">
+                    <label for="apTokens">🪙 Бюджет токенов на один запуск</label>
+                    <input id="apTokens" class="std-input" type="number" min="10000" step="10000">
+                </div>
+                <div class="field-box">
+                    <label for="apMinutes">⏱ Время на один запуск, минут</label>
+                    <input id="apMinutes" class="std-input" type="number" min="5" max="1440" step="5">
+                </div>
+            </div>
+            <div class="section-sub">Запуск: в чате «Проект» напишите <code>/auto цель</code> или выберите «Автопилот для этого проекта» в меню проекта в шапке.</div>
+            <div class="section-row" style="margin-top:18px">
+                <div>
+                    <div class="section-title">🏢 Штат и офис</div>
+                    <div class="section-sub">Руководитель сам нанимает людей под нагрузку и специалистов под файлы проекта, а офис сам ставит новые столы.</div>
+                </div>
+            </div>
+            <div class="chk-list">
+                <label class="chk-row"><input type="checkbox" id="stAutoHire"><span><b>Нанимать сотрудников под нагрузку</b><small>Очередь втрое больше разработчиков — ещё разработчик; много CSS, Docker или README — дизайнер, DevOps или писатель</small></span></label>
+                <label class="chk-row"><input type="checkbox" id="stDismiss"><span><b>Отпускать временных, когда работа закончена</b><small>Нанятые по просьбе в чате остаются в штате</small></span></label>
+                <label class="chk-row"><input type="checkbox" id="stDesks"><span><b>Ставить новые столы, когда мест не хватает</b><small>Столы встают на свободное место с проходом, как кнопка «+» в планировке</small></span></label>
+            </div>
+            <div class="dirs-grid">
+                <div class="field-box">
+                    <label for="stMax">👥 Максимум сотрудников в офисе (1–30)</label>
+                    <input id="stMax" class="std-input" type="number" min="1" max="30" step="1">
+                </div>
+            </div>
+        </div>
+        <div class="modal-body mtab-content" id="tab-notify">
+            <div class="section-row">
+                <div>
+                    <div class="section-title">✈️ Telegram</div>
+                    <div class="section-sub">Создайте бота у @BotFather и скопируйте его токен. Напишите своему боту /start, а свой ID чата узнайте у @userinfobot.</div>
+                </div>
+                <button class="btn btn-ghost" data-action="notify-test" data-channel="telegram">Проверить</button>
+            </div>
+            <div class="chk-list">
+                <label class="chk-row"><input type="checkbox" id="ntTgOn"><span><b>Присылать уведомления в Telegram</b><small>Итоги работы, ошибки и вопросы команды</small></span></label>
+                <label class="chk-row"><input type="checkbox" id="ntTgReplies"><span><b>Принимать ответы из Telegram</b><small>Сообщения боту уходят в чат «Проект», ответы команды приходят обратно. Только из указанного чата</small></span></label>
+            </div>
+            <div class="dirs-grid">
+                <div class="field-box"><label for="ntTgToken">🔑 Токен бота <span id="ntTgTokenState"></span></label>
+                    <input id="ntTgToken" class="std-input" type="password" autocomplete="off" placeholder="123456:ABC…"></div>
+                <div class="field-box"><label for="ntTgChat">💬 ID чата</label>
+                    <input id="ntTgChat" class="std-input" type="text" placeholder="123456789"></div>
+            </div>
+            <div class="section-row" style="margin-top:18px">
+                <div>
+                    <div class="section-title">✉️ Почта</div>
+                    <div class="section-sub">Любой почтовый сервер с SMTP. Для Gmail и Яндекса нужен пароль приложения, а не обычный пароль.</div>
+                </div>
+                <button class="btn btn-ghost" data-action="notify-test" data-channel="email">Проверить</button>
+            </div>
+            <div class="chk-list">
+                <label class="chk-row"><input type="checkbox" id="ntEmOn"><span><b>Присылать уведомления на почту</b><small>Те же события, что и в Telegram</small></span></label>
+            </div>
+            <div class="dirs-grid">
+                <div class="field-box"><label for="ntEmHost">SMTP-сервер</label><input id="ntEmHost" class="std-input" type="text" placeholder="smtp.gmail.com"></div>
+                <div class="field-box"><label for="ntEmPort">Порт</label><input id="ntEmPort" class="std-input" type="number" min="1" max="65535"></div>
+                <div class="field-box"><label for="ntEmSec">Шифрование</label><select id="ntEmSec" class="std-input">
+                    <option value="starttls">STARTTLS (порт 587)</option><option value="ssl">SSL (порт 465)</option><option value="none">Без шифрования</option></select></div>
+                <div class="field-box"><label for="ntEmUser">Логин</label><input id="ntEmUser" class="std-input" type="text" autocomplete="off"></div>
+                <div class="field-box"><label for="ntEmPass">Пароль <span id="ntEmPassState"></span></label><input id="ntEmPass" class="std-input" type="password" autocomplete="off"></div>
+                <div class="field-box"><label for="ntEmFrom">От кого</label><input id="ntEmFrom" class="std-input" type="text" placeholder="office@example.com"></div>
+                <div class="field-box"><label for="ntEmTo">Кому</label><input id="ntEmTo" class="std-input" type="text" placeholder="me@example.com"></div>
+            </div>
+            <div class="section-title" style="margin-top:18px">🔔 О чём сообщать</div>
+            <div class="chk-list">
+                <label class="chk-row"><input type="checkbox" id="ntEvDone"><span><b>Проект или доработка готовы</b><small>Что сделано и чем закончилась автопроверка</small></span></label>
+                <label class="chk-row"><input type="checkbox" id="ntEvAuto"><span><b>Автопилот закончил</b><small>Итог и выполненные требования</small></span></label>
+                <label class="chk-row"><input type="checkbox" id="ntEvErr"><span><b>Работа остановилась с ошибкой</b><small>Нет ключа, провайдер не отвечает и т. п.</small></span></label>
+                <label class="chk-row"><input type="checkbox" id="ntEvQ"><span><b>У команды вопрос</b><small>Решение, которое агенты не могут принять сами</small></span></label>
+            </div>
+            <div class="section-title" style="margin-top:18px">📜 Git</div>
+            <div class="chk-list">
+                <label class="chk-row"><input type="checkbox" id="gitOn"><span><b>Вести историю проектов в Git</b><small>У каждого проекта свой репозиторий, коммит на каждую принятую задачу, автор — агент. Устанавливать Git не нужно; папку проекта можно открыть в GitHub Desktop</small></span></label>
+            </div>
+        </div>
+        <div class="modal-foot">
+            <span class="status-msg" id="cfgMsg"></span>
+            <div class="right">
+                <button class="btn btn-ghost" data-action="close-modal">Отмена</button>
+                <button class="btn btn-go" data-action="cfg-save">💾 Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

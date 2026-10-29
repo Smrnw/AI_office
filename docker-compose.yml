@@ -1,0 +1,36 @@
+# Запуск: cp .env.example .env (задайте PIXEL_OFFICE_TOKEN), затем docker compose up -d --build
+# На Linux всё это делает deploy/install.sh.
+services:
+  office:
+    build:
+      context: .
+      args:
+        WITH_NODE: ${PO_WITH_NODE:-1}
+    image: pixel-office:latest
+    container_name: pixel-office
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      PIXEL_OFFICE_DIR: /data
+      PIXEL_OFFICE_HOST: 0.0.0.0
+      PIXEL_OFFICE_PORT: "8080"
+    # по умолчанию офис доступен только с этой машины; для сети установщик ставит PO_BIND=0.0.0.0
+    ports:
+      - "${PO_BIND:-127.0.0.1}:${PO_PORT:-8080}:8080"
+    volumes:
+      - ./data:/data
+    # чтобы из контейнера достучаться до Ollama на хосте: http://host.docker.internal:11434/v1/chat/completions
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
