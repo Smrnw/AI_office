@@ -14,8 +14,17 @@ from .api.security import LOOPBACK, SecurityMiddleware
 from .llm import client
 
 
+def quiet_disconnects(loop: asyncio.AbstractEventLoop, context: dict) -> None:
+    """На Windows цикл событий печатает трейсбек, когда браузер обрывает соединение (закрыли вкладку,
+    оборвался фоновый запрос). Для сервера это обычное дело, а не ошибка: такие случаи молча пропускаем."""
+    if isinstance(context.get("exception"), (ConnectionResetError, ConnectionAbortedError, BrokenPipeError)):
+        return
+    loop.default_exception_handler(context)
+
+
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
+    asyncio.get_running_loop().set_exception_handler(quiet_disconnects)
     runtime.sync_runtime_agents()
     workflow.load_project_idea()
     if gitrepo.on_task_done not in tasks_store.ON_DONE:

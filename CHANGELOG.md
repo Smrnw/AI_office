@@ -8,6 +8,13 @@ data folder or the API, **MINOR** — new features, **PATCH** — fixes. The ver
 изменения папки данных или API, **MINOR** — новые возможности, **PATCH** — исправления. Версия записана в
 одном месте — `pixel_office/__init__.py`; её показывают меню, справка, `/api/health` и установщики.
 
+## [1.0.1] — 2026-10-30
+
+- Windows: the server no longer prints a `ConnectionResetError` traceback when the browser drops a
+  connection (a closed tab or an aborted background request). It was harmless noise, not an error.
+- Windows: Сервер больше не печатает трейсбек `ConnectionResetError`, когда браузер обрывает
+  соединение (закрыли вкладку, оборвался фоновый запрос). Это был безвредный шум, а не ошибка.
+
 ## [1.0.0] — 2026-10-29
 
 First public release. / Первый публичный выпуск.
@@ -27,4 +34,5 @@ First public release. / Первый публичный выпуск.
 - Layout editor, agent appearance editor, light and dark themes, Russian and English interface.
 - Windows installer with a desktop shortcut, Linux installer with Docker.
 
+[1.0.1]: https://github.com/Smrnw/AI_office/releases/tag/v1.0.1
 [1.0.0]: https://github.com/Smrnw/AI_office/releases/tag/v1.0.0
